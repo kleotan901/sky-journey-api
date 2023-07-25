@@ -27,6 +27,7 @@ from airport.serializers import (
     AirportListSerializer,
     FlightListSerializer,
     FlightDetailSerializer,
+    OrderListSerializer,
 )
 
 
@@ -41,7 +42,7 @@ class CountryViewSet(viewsets.ModelViewSet):
 
 
 class CityViewSet(viewsets.ModelViewSet):
-    queryset = City.objects.all()
+    queryset = City.objects.select_related("country")
     serializer_class = CityListSerializer
 
     def get_serializer_class(self):
@@ -56,7 +57,7 @@ class AirplaneTypeViewSet(viewsets.ModelViewSet):
 
 
 class AirplaneViewSet(viewsets.ModelViewSet):
-    queryset = Airplane.objects.all()
+    queryset = Airplane.objects.select_related("airplane_type")
     serializer_class = AirplaneListSerializer
 
     def get_serializer_class(self):
@@ -66,7 +67,7 @@ class AirplaneViewSet(viewsets.ModelViewSet):
 
 
 class AirportViewSet(viewsets.ModelViewSet):
-    queryset = Airport.objects.all()
+    queryset = Airport.objects.select_related("closest_big_city__country")
     serializer_class = AirportListSerializer
 
     def get_serializer_class(self):
@@ -76,7 +77,7 @@ class AirportViewSet(viewsets.ModelViewSet):
 
 
 class RouteViewSet(viewsets.ModelViewSet):
-    queryset = Route.objects.all()
+    queryset = Route.objects.select_related("source", "destination")
     serializer_class = RouteListSerializer
 
     def get_serializer_class(self):
@@ -86,7 +87,9 @@ class RouteViewSet(viewsets.ModelViewSet):
 
 
 class FlightViewSet(viewsets.ModelViewSet):
-    queryset = Flight.objects.all()
+    queryset = Flight.objects.select_related(
+        "route__source", "route__destination", "airplane"
+    )
     serializer_class = FlightListSerializer
 
     def get_serializer_class(self):
@@ -98,5 +101,18 @@ class FlightViewSet(viewsets.ModelViewSet):
 
 
 class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
+    queryset = Order.objects.prefetch_related("tickets__flight")
+    serializer_class = OrderListSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(user=self.request.user)
+        return queryset
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return OrderSerializer
+
+        return OrderListSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
