@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from airport.models import (
     Crew,
@@ -29,21 +30,25 @@ from airport.serializers import (
     FlightDetailSerializer,
     OrderListSerializer,
 )
+from user.permissions import IsAdminOrIfAuthenticatedReadOnly
 
 
 class CrewViewSet(viewsets.ModelViewSet):
     queryset = Crew.objects.all()
     serializer_class = CrewSerializer
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
 
 class CountryViewSet(viewsets.ModelViewSet):
     queryset = Country.objects.all()
     serializer_class = CountrySerializer
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
 
 class CityViewSet(viewsets.ModelViewSet):
     queryset = City.objects.select_related("country")
     serializer_class = CityListSerializer
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def get_serializer_class(self):
         if self.action in ("create", "update"):
@@ -54,11 +59,13 @@ class CityViewSet(viewsets.ModelViewSet):
 class AirplaneTypeViewSet(viewsets.ModelViewSet):
     queryset = AirplaneType.objects.all()
     serializer_class = AirplaneTypeSerializer
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
 
 class AirplaneViewSet(viewsets.ModelViewSet):
     queryset = Airplane.objects.select_related("airplane_type")
     serializer_class = AirplaneListSerializer
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def get_serializer_class(self):
         if self.action in ("create", "update"):
@@ -69,6 +76,7 @@ class AirplaneViewSet(viewsets.ModelViewSet):
 class AirportViewSet(viewsets.ModelViewSet):
     queryset = Airport.objects.select_related("closest_big_city__country")
     serializer_class = AirportListSerializer
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def get_serializer_class(self):
         if self.action in ("create", "update"):
@@ -79,6 +87,7 @@ class AirportViewSet(viewsets.ModelViewSet):
 class RouteViewSet(viewsets.ModelViewSet):
     queryset = Route.objects.select_related("source", "destination")
     serializer_class = RouteListSerializer
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def get_serializer_class(self):
         if self.action in ("create", "update"):
@@ -91,6 +100,7 @@ class FlightViewSet(viewsets.ModelViewSet):
         "route__source", "route__destination", "airplane"
     )
     serializer_class = FlightListSerializer
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def get_serializer_class(self):
         if self.action in ("create", "update"):
@@ -101,12 +111,15 @@ class FlightViewSet(viewsets.ModelViewSet):
 
 
 class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.prefetch_related("tickets__flight")
+    queryset = Order.objects.all()
     serializer_class = OrderListSerializer
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
     def get_queryset(self):
         queryset = self.queryset.filter(user=self.request.user)
-        return queryset
+        return queryset.prefetch_related(
+            "tickets__flight__route", "tickets__flight__airplane"
+        )
 
     def get_serializer_class(self):
         if self.action == "create":
