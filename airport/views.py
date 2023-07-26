@@ -1,5 +1,6 @@
-from rest_framework import viewsets
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework import viewsets, mixins
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import GenericViewSet
 
 from airport.models import (
     Crew,
@@ -50,6 +51,14 @@ class CityViewSet(viewsets.ModelViewSet):
     serializer_class = CityListSerializer
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
+    def get_queryset(self):
+        """Retrieve the city with filters by name"""
+        queryset = self.queryset
+        name = self.request.query_params.get("name")
+        if name:
+            queryset = City.objects.filter(name__icontains=name)
+        return queryset
+
     def get_serializer_class(self):
         if self.action in ("create", "update"):
             return CitySerializer
@@ -78,6 +87,16 @@ class AirportViewSet(viewsets.ModelViewSet):
     serializer_class = AirportListSerializer
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
+    def get_queryset(self):
+        """Retrieve the airports filtering by closest big city"""
+        queryset = self.queryset
+        closest_big_city = self.request.query_params.get("closest_big_city")
+        if closest_big_city:
+            queryset = Airport.objects.filter(
+                closest_big_city__name__icontains=closest_big_city
+            )
+        return queryset
+
     def get_serializer_class(self):
         if self.action in ("create", "update"):
             return AirportSerializer
@@ -88,6 +107,17 @@ class RouteViewSet(viewsets.ModelViewSet):
     queryset = Route.objects.select_related("source", "destination")
     serializer_class = RouteListSerializer
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
+
+    def get_queryset(self):
+        """Retrieve the routs filtering by source, destination"""
+        queryset = self.queryset
+        source = self.request.query_params.get("source")
+        destination = self.request.query_params.get("destination")
+        if source:
+            queryset = Route.objects.filter(source__name__icontains=source)
+        if destination:
+            queryset = Route.objects.filter(destination__name__icontains=destination)
+        return queryset
 
     def get_serializer_class(self):
         if self.action in ("create", "update"):
@@ -102,6 +132,20 @@ class FlightViewSet(viewsets.ModelViewSet):
     serializer_class = FlightListSerializer
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
+    def get_queryset(self):
+        """Retrieve the flights filtering by route, departure time and arrival time"""
+        queryset = self.queryset
+        route = self.request.query_params.get("route")
+        departure_time = self.request.query_params.get("departure_time")
+        arrival_time = self.request.query_params.get("arrival_time")
+        if route:
+            queryset = Flight.objects.filter(route__destination__name__icontains=route)
+        if departure_time:
+            queryset = Flight.objects.filter(departure_time__icontains=departure_time)
+        if arrival_time:
+            queryset = Flight.objects.filter(arrival_time__icontains=arrival_time)
+        return queryset
+
     def get_serializer_class(self):
         if self.action in ("create", "update"):
             return FlightSerializer
@@ -110,10 +154,15 @@ class FlightViewSet(viewsets.ModelViewSet):
         return FlightListSerializer
 
 
-class OrderViewSet(viewsets.ModelViewSet):
+class OrderViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    GenericViewSet,
+):
     queryset = Order.objects.all()
     serializer_class = OrderListSerializer
-    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         queryset = self.queryset.filter(user=self.request.user)
