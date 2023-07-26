@@ -111,20 +111,18 @@ class FlightSerializer(serializers.ModelSerializer):
 class FlightListSerializer(FlightSerializer):
     route = RouteSerializer(read_only=True)
     airplane = serializers.CharField(source="airplane.name", read_only=True)
+    tickets_available = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Flight
-        fields = ["id", "route", "airplane", "departure_time", "arrival_time"]
-
-
-class FlightDetailSerializer(FlightListSerializer):
-    airplane = AirplaneListSerializer(read_only=True)
-    crew = CrewSerializer(many=True, read_only=True)
-    route = RouteSerializer(read_only=True)
-
-    class Meta:
-        model = Flight
-        fields = ["id", "route", "airplane", "departure_time", "arrival_time", "crew"]
+        fields = [
+            "id",
+            "route",
+            "airplane",
+            "departure_time",
+            "arrival_time",
+            "tickets_available",
+        ]
 
 
 class TicketSerializer(serializers.ModelSerializer):
@@ -152,8 +150,33 @@ class TicketSerializer(serializers.ModelSerializer):
         ]
 
 
-class TicketDetailSerializer(TicketSerializer):
+class TicketListSerializer(TicketSerializer):
     flight = FlightListSerializer(read_only=True)
+
+
+class TicketDetailSerializer(TicketSerializer):
+    class Meta:
+        model = Ticket
+        fields = ["row", "seat"]
+
+
+class FlightDetailSerializer(FlightListSerializer):
+    airplane = AirplaneListSerializer(read_only=True)
+    crew = CrewSerializer(many=True, read_only=True)
+    route = RouteSerializer(read_only=True)
+    taken_places = TicketDetailSerializer(source="tickets", many=True, read_only=True)
+
+    class Meta:
+        model = Flight
+        fields = [
+            "id",
+            "route",
+            "airplane",
+            "departure_time",
+            "arrival_time",
+            "crew",
+            "taken_places",
+        ]
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -173,4 +196,4 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class OrderListSerializer(OrderSerializer):
-    tickets = TicketDetailSerializer(many=True, read_only=True)
+    tickets = TicketListSerializer(many=True, read_only=True)

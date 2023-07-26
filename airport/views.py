@@ -1,3 +1,4 @@
+from django.db.models import F, Count
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, mixins
 from rest_framework.permissions import IsAuthenticated
@@ -185,6 +186,13 @@ class FlightViewSet(viewsets.ModelViewSet):
         route_source = self.request.query_params.get("route_source")
         departure_time = self.request.query_params.get("departure_time")
         arrival_time = self.request.query_params.get("arrival_time")
+        if self.action == "list":
+            queryset = (
+                queryset.select_related("airplane").annotate(
+                    tickets_available=F("airplane__rows") * F("airplane__seats_in_row")
+                    - Count("tickets")
+                )
+            ).order_by("id")
         if route_destination:
             queryset = Flight.objects.filter(
                 route__destination__name__icontains=route_destination
@@ -248,15 +256,11 @@ class OrderViewSet(
     mixins.RetrieveModelMixin,
     GenericViewSet,
 ):
-    queryset = Order.objects.all()
+    queryset = Order.objects.prefetch_related(
+        "tickets__flight__route", "tickets__flight__airplane"
+    )
     serializer_class = OrderListSerializer
     permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        queryset = self.queryset.filter(user=self.request.user)
-        return queryset.prefetch_related(
-            "tickets__flight__route", "tickets__flight__airplane"
-        )
 
     def get_serializer_class(self):
         if self.action == "create":
