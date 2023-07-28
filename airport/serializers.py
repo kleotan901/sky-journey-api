@@ -16,6 +16,12 @@ from airport.models import (
 
 
 class CrewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Crew
+        fields = ["id", "first_name", "last_name"]
+
+
+class CrewListSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}"
 
@@ -81,6 +87,12 @@ class AirportListSerializer(AirportSerializer):
 
 
 class RouteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Route
+        fields = ["id", "source", "destination", "distance"]
+
+
+class RouteListSerializer(serializers.ModelSerializer):
     source = serializers.SlugRelatedField(slug_field="name", read_only=True)
     destination = serializers.SlugRelatedField(slug_field="name", read_only=True)
 
@@ -89,7 +101,7 @@ class RouteSerializer(serializers.ModelSerializer):
         fields = ["source", "destination"]
 
 
-class RouteListSerializer(RouteSerializer):
+class RouteDetailSerializer(RouteSerializer):
     source = serializers.SlugRelatedField(slug_field="name", read_only=True)
     destination = serializers.SlugRelatedField(slug_field="name", read_only=True)
 
@@ -99,17 +111,21 @@ class RouteListSerializer(RouteSerializer):
 
 
 class FlightSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        data = super(FlightSerializer, self).validate(attrs)
+        if attrs["arrival_time"] < attrs["departure_time"]:
+            raise serializers.ValidationError(
+                {"arrival_time": "arrival time can not be less than departure time"}
+            )
+        return data
+
     class Meta:
         model = Flight
-        fields = [
-            "route",
-            "departure_time",
-            "arrival_time",
-        ]
+        fields = ["id", "route", "airplane", "departure_time", "arrival_time", "crew"]
 
 
 class FlightListSerializer(FlightSerializer):
-    route = RouteSerializer(read_only=True)
+    route = RouteListSerializer(read_only=True)
     airplane = serializers.CharField(source="airplane.name", read_only=True)
     tickets_available = serializers.IntegerField(read_only=True)
 
@@ -162,8 +178,8 @@ class TicketDetailSerializer(TicketSerializer):
 
 class FlightDetailSerializer(FlightListSerializer):
     airplane = AirplaneListSerializer(read_only=True)
-    crew = CrewSerializer(many=True, read_only=True)
-    route = RouteSerializer(read_only=True)
+    crew = CrewListSerializer(many=True, read_only=True)
+    route = RouteListSerializer(read_only=True)
     taken_places = TicketDetailSerializer(source="tickets", many=True, read_only=True)
 
     class Meta:
