@@ -32,6 +32,8 @@ from airport.serializers import (
     FlightListSerializer,
     FlightDetailSerializer,
     OrderListSerializer,
+    CrewListSerializer,
+    RouteDetailSerializer,
 )
 from user.permissions import IsAdminOrIfAuthenticatedReadOnly
 
@@ -40,6 +42,11 @@ class CrewViewSet(viewsets.ModelViewSet):
     queryset = Crew.objects.all()
     serializer_class = CrewSerializer
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return CrewListSerializer
+        return CrewSerializer
 
 
 class CountryViewSet(viewsets.ModelViewSet):
@@ -91,6 +98,14 @@ class AirplaneViewSet(viewsets.ModelViewSet):
     serializer_class = AirplaneListSerializer
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
 
+    def get_queryset(self):
+        """Retrieve the airplane filtering by name"""
+        queryset = self.queryset
+        name = self.request.query_params.get("name")
+        if name:
+            queryset = Airplane.objects.filter(name__icontains=name)
+        return queryset
+
     def get_serializer_class(self):
         if self.action in ("create", "update"):
             return AirplaneSerializer
@@ -101,6 +116,11 @@ class AirportViewSet(viewsets.ModelViewSet):
     queryset = Airport.objects.select_related("closest_big_city__country")
     serializer_class = AirportListSerializer
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update"):
+            return AirportSerializer
+        return AirportListSerializer
 
     def get_queryset(self):
         """Retrieve the airports filtering by closest big city"""
@@ -125,11 +145,6 @@ class AirportViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(self, request, *args, **kwargs)
 
-    def get_serializer_class(self):
-        if self.action in ("create", "update"):
-            return AirportSerializer
-        return AirportListSerializer
-
 
 class RouteViewSet(viewsets.ModelViewSet):
     queryset = Route.objects.select_related("source", "destination")
@@ -150,6 +165,8 @@ class RouteViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ("create", "update"):
             return RouteSerializer
+        if self.action == "retrieve":
+            return RouteDetailSerializer
         return RouteListSerializer
 
     @extend_schema(
@@ -261,6 +278,10 @@ class OrderViewSet(
     )
     serializer_class = OrderListSerializer
     permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(user=self.request.user)
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "create":
