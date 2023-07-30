@@ -48,7 +48,6 @@ prometheus-client==0.17.1
 prompt-toolkit==3.0.39
 psycopg2==2.9.6
 psycopg2-binary==2.9.6
-pygame==2.3.0
 PyJWT==2.7.0
 pyproject_hooks==1.0.0
 python-crontab==3.0.0
