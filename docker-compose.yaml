@@ -21,3 +21,33 @@ services:
       - .env
     depends_on:
       - db
+
+  redis:
+    image: "redis:alpine"
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             celery -A airport_api_service worker --loglevel=info"
+    depends_on:
+      - web
+      - redis
+      - db
+    restart: on-failure
+    env_file:
+      - .env
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5555:5555"
+    command: "celery -A airport_api_service flower --address=0.0.0.0"
+    depends_on:
+      - celery
+    env_file:
+      - .env
