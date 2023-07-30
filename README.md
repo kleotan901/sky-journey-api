@@ -9,6 +9,7 @@ API allows users to create profiles and book flights
 * Displaying available and taken places on the flight
 * Filtering airports, routs and flights
 * Create airports, routs, flights with administrator rights
+* Email confirmation
 
 ## Run with docker
 Docker should be installed
@@ -18,7 +19,6 @@ Docker should be installed
 
 ## Getting access
 
-+ download data: python manage.py loaddata airport_api_service_fixture.json
 + create new user via /api/user/register/
 + get access token via /api/user/token/
 
