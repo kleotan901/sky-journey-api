@@ -26,7 +26,6 @@ router.register("routes", RouteViewSet)
 router.register("flights", FlightViewSet)
 router.register("orders", OrderViewSet)
 
-
 urlpatterns = [
     path("", include(router.urls)),
 ]
