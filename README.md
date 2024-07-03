@@ -1,5 +1,6 @@
-# airport-api-service
-API allows users to create profiles and book flights
+# SkyJourney API
+API allows users to create profiles and book flights.
+SkyJourney API is a comprehensive Django-based RESTful web application designed for managing flight bookings and user profiles. Leveraging Django Rest Framework, Python, Celery, and Redis, the project includes robust features such as JWT authentication for secure user access. The admin panel (/admin/) provides administrative functionalities, while detailed API documentation is accessible at /api/doc/swagger/.
 ### Features
 
 * JWT Authenticated
@@ -13,8 +14,8 @@ API allows users to create profiles and book flights
 
 ## Run with docker
 Docker should be installed
-+ git clone https://github.com/kleotan901/airport-api-service.git
-+ cd airport-api-service
++ git clone https://github.com/kleotan901/sky-journey-api.git
++ cd sky-journey-api
 + docker-compose up --build
 
 ## Getting access

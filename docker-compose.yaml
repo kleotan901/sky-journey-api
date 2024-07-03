@@ -31,7 +31,7 @@ services:
       dockerfile: Dockerfile
     command: >
       sh -c "python manage.py wait_for_db &&
-             celery -A airport_api_service worker --loglevel=info"
+             celery -A sky-journey-api worker --loglevel=info"
     depends_on:
       - web
       - redis
@@ -46,7 +46,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5555:5555"
-    command: "celery -A airport_api_service flower --address=0.0.0.0"
+    command: "celery -A sky-journey-api flower --address=0.0.0.0"
     depends_on:
       - celery
     env_file:
