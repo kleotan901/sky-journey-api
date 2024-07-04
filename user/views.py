@@ -31,7 +31,7 @@ class SendEmailConfirmationAPIView(viewsets.ViewSet):
         return Response({"message": "Email was sent"}, status.HTTP_201_CREATED)
 
     def email_verification(self, request):
-        token_id = request.GET["token_id"]
+        token_id = request.GET.get("token_id")
         try:
             token = EmailConfirmationToken.objects.get(id=token_id)
             user = token.user
